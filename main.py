@@ -369,56 +369,11 @@ def get_primary_font_path(bold: bool = True) -> str:
     if FONT_REGULAR: return FONT_REGULAR
     return None
 
-def _probe_clip_health(filepath: str) -> tuple[bool, str]:
-    """Quick ffprobe check: can this file actually be decoded?
-    Returns (is_healthy, reason_if_not)."""
-    cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
-           '-show_entries', 'stream=width,height,duration,codec_name',
-           '-of', 'json', filepath]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-    if result.returncode != 0:
-        err = result.stderr.strip().splitlines()[-1] if result.stderr.strip() else "ffprobe failed"
-        return False, err[:120]
-    try:
-        data = json.loads(result.stdout)
-        streams = data.get('streams', [])
-        if not streams:
-            return False, "no video stream found"
-        s = streams[0]
-        if not s.get('width') or not s.get('height'):
-            return False, "missing width/height"
-        return True, ""
-    except Exception as e:
-        return False, f"parse error: {e}"
-
 
 @app.on_event("startup")
 async def startup_event():
-    print("🚀 Vaults of History v3 starting...")
-    broll_dirs = ['space_vids','ancient_ruins_vids','cosmic_vids',
-                  'dark_sky_vids','temple_vids']
-    print("📁 Broll folder audit:")
-    bad_clips = []
-    for d in broll_dirs:
-        if os.path.exists(d):
-            files = [f for f in os.listdir(d) if f.lower().endswith(('.mp4','.mov','.avi'))]
-            status = f"✅ {len(files)} clips" if files else "❌ EMPTY -- add Seedance clips here"
-            print(f"  {d}: {status}")
-            for f in files:
-                fpath = os.path.join(d, f)
-                healthy, reason = _probe_clip_health(fpath)
-                if not healthy:
-                    bad_clips.append((fpath, reason))
-        else:
-            print(f"  {d}: ❌ MISSING -- folder doesn't exist")
-
-    if bad_clips:
-        print("⚠️  BROKEN CLIPS DETECTED (these will render as black filler):")
-        for fpath, reason in bad_clips:
-            print(f"    ✗ {fpath} -- {reason}")
-        print(f"  → Replace or remove these {len(bad_clips)} file(s) to eliminate black segments.")
-    else:
-        print("  ✅ All clips passed health check")
+    print("🚀 Video Automation Workflow starting...")
+    print(f"  ✅ functions_manim.py loaded")
 
 
 def _bgr(r, g, b):
@@ -3237,25 +3192,9 @@ class FinanceGenerator:
     def __init__(self, audio_path: str, output_path: str = "output.mp4", niche_config: dict = None):
         self.audio_path  = audio_path
         self.output_path = output_path
-
-        if niche_config:
-            self.broll_dirs  = niche_config.get('broll_dirs', {})
-            self.keyword_map = niche_config.get('keyword_map', {})
-        else:
-            self.broll_dirs = {
-                'space':   'space_vids',
-                'ancient': 'ancient_ruins_vids',
-                'cosmic':  'cosmic_vids',
-                'sky':     'dark_sky_vids',
-                'temple':  'temple_vids',
-            }
-            self.keyword_map = {
-                'space':   ['universe', 'galaxy', 'black hole', 'star', 'planet', 'cosmos'],
-                'ancient': ['ancient', 'civilization', 'pyramid', 'ruins', 'lost', 'forgotten'],
-                'cosmic':  ['time', 'reality', 'dimension', 'quantum', 'existence', 'consciousness'],
-                'sky':     ['sky', 'atmosphere', 'above', 'beyond', 'vast', 'endless'],
-                'temple':  ['religion', 'god', 'sacred', 'ritual', 'belief', 'worship'],
-            }
+        niche_config      = niche_config or {}
+        self.broll_dirs   = niche_config.get('broll_dirs', {})
+        self.keyword_map  = niche_config.get('keyword_map', {})
 
     def get_audio_duration(self) -> float:
         cmd    = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
@@ -3264,27 +3203,6 @@ class FinanceGenerator:
         if result.returncode != 0:
             raise Exception(f"ffprobe failed: {result.stderr}")
         return float(result.stdout.strip())
-
-    def get_video_info(self, filepath: str):
-        cmd    = ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
-                  '-show_entries', 'stream=width,height', '-of', 'json', filepath]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        try:
-            data = json.loads(result.stdout)
-            w    = data['streams'][0]['width']
-            h    = data['streams'][0]['height']
-            return w, h, w / h
-        except:
-            return None, None, None
-
-    def get_all_files_from_dir(self, directory: str) -> list:
-        if not os.path.exists(directory):
-            return []
-        files = [os.path.join(directory, f) for f in os.listdir(directory)
-                 if f.lower().endswith(('.mp4', '.mov', '.avi'))]
-        if not files:
-            print(f"  ⚠ Folder exists but is EMPTY: {directory}")
-        return files
 
     def transcribe_with_whisper(self, model: str = "base") -> dict | None:
         cache_file = f"{os.path.splitext(self.audio_path)[0]}_transcription.json"
@@ -3308,168 +3226,6 @@ class FinanceGenerator:
         except Exception as e:
             print(f"  ❌ Whisper error: {e}")
             return None
-
-    def match_broll_categories(self, full_text: str) -> list:
-        text   = full_text.lower()
-        scores = {cat: sum(text.count(k) for k in kws)
-                  for cat, kws in self.keyword_map.items()}
-        sorted_cats = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        top = [self.broll_dirs[c] for c, s in sorted_cats if s > 0 and c in self.broll_dirs]
-
-        valid_top = []
-        for folder in top:
-            files = self.get_all_files_from_dir(folder)
-            if files:
-                valid_top.append(folder)
-            else:
-                print(f"  ⚠ Skipping empty/missing broll folder: {folder}")
-
-        if not valid_top:
-            print(f"  ⚠ No keyword-matched folders had clips -- scanning all broll dirs...")
-            for folder in self.broll_dirs.values():
-                files = self.get_all_files_from_dir(folder)
-                if files:
-                    valid_top.append(folder)
-                    print(f"  ✓ Found clips in: {folder} ({len(files)} files)")
-
-        if not valid_top:
-            raise Exception(
-                "No broll clips found in ANY configured folder.\n"
-                f"Configured dirs: {list(self.broll_dirs.values())}\n"
-                "Add your Seedance space/ancient/cosmic clips to these folders."
-            )
-
-        return valid_top
-
-    def create_segment_plan(self, duration: float, beats: list, top_categories: list) -> list:
-        segments = []
-        all_folders = []
-        for folder in self.broll_dirs.values():
-            if self.get_all_files_from_dir(folder):
-                all_folders.append(folder)
-        if not all_folders:
-            raise Exception("No broll clips found in any folder.")
-
-        folder_pools = {}
-        for folder in all_folders:
-            folder_pools[folder] = list(self.get_all_files_from_dir(folder))
-
-        broll_cat_to_folder = {
-            'space':   self.broll_dirs.get('space',   'space_vids'),
-            'ancient': self.broll_dirs.get('ancient', 'ancient_ruins_vids'),
-            'cosmic':  self.broll_dirs.get('cosmic',  'cosmic_vids'),
-            'sky':     self.broll_dirs.get('sky',     'dark_sky_vids'),
-            'temple':  self.broll_dirs.get('temple',  'temple_vids'),
-        }
-
-        folder_idx = {f: 0 for f in all_folders}
-        for f in all_folders:
-            random.shuffle(folder_pools[f])
-
-        base_dur   = 4.0
-        n_segs     = max(int(duration / base_dur), 1)
-        folder_rot = 0
-
-        for i in range(n_segs):
-            seg_dur = float(beats[i].get('clip_duration', base_dur)) if i < len(beats) else base_dur
-            target_folder = all_folders[folder_rot % len(all_folders)]
-            folder_rot += 1
-
-            pool = folder_pools[target_folder]
-            idx  = folder_idx[target_folder]
-            if idx >= len(pool):
-                random.shuffle(pool)
-                idx = 0
-            chosen = pool[idx]
-            folder_idx[target_folder] = idx + 1
-
-            segments.append({
-                'type':     'broll',
-                'category': target_folder,
-                'file':     chosen,
-                'duration': seg_dur,
-            })
-            print(f"    seg {i+1}: {os.path.basename(chosen)} [{os.path.basename(target_folder)}]")
-
-        if not segments:
-            raise Exception("No segments created.")
-
-        total = sum(s['duration'] for s in segments)
-        if total < duration:
-            segments[-1]['duration'] += (duration - total)
-
-        return segments
-
-    def _make_black_filler(self, output_file: str, dur: float, fps: int = 30) -> str:
-        """Legacy b-roll fallback. Never output a pure black/void screen."""
-        return _make_safe_still_fallback(
-            output_file,
-            title="Visual Pause",
-            subtitle="The explanation continues",
-            duration=dur,
-            w=OUTPUT_WIDTH,
-            h=OUTPUT_HEIGHT,
-            fps=fps,
-        )
-
-    def process_segment_to_file(self, segment: dict, output_file: str,
-                                fps: int = 30, progress_callback=None) -> str:
-        """Process one broll segment. ALWAYS returns a valid file — never skips.
-        If the clip fails, falls back to a black filler of the correct duration
-        so total video length is preserved and text timestamps stay in sync."""
-        dur = segment['duration']
-        source_file = segment['file']
-        w, h, aspect = self.get_video_info(source_file)
-
-        cmd = ['ffmpeg', '-y', '-progress', 'pipe:1', '-nostats',
-               '-i', source_file, '-t', str(dur)]
-
-        vf = []
-        if aspect and aspect < (OUTPUT_WIDTH / OUTPUT_HEIGHT):
-            vf += [f"scale={OUTPUT_WIDTH}:-2:force_original_aspect_ratio=decrease",
-                   f"pad={OUTPUT_WIDTH}:{OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black"]
-        else:
-            vf += [f"scale=-2:{OUTPUT_HEIGHT}:force_original_aspect_ratio=increase",
-                   f"crop={OUTPUT_WIDTH}:{OUTPUT_HEIGHT}"]
-
-        vf = [f"fps={fps}"] + vf
-        vf += ["eq=brightness=0.02:contrast=1.05:saturation=1.1", "format=yuv420p"]
-        cmd += ['-vf', ','.join(vf), '-c:v', 'libx264', '-preset', ENCODE_PRESET,
-                '-crf', ENCODE_CRF, '-tune', 'animation', '-pix_fmt', 'yuv420p',
-                '-r', str(fps), '-movflags', '+faststart', '-an', output_file]
-
-        success  = False
-        err_text = ""
-        if progress_callback:
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    universal_newlines=True, bufsize=1)
-            total_f = int(dur * fps)
-            last_f  = 0
-            for line in proc.stdout:
-                if line.startswith('frame='):
-                    try:
-                        cf = int(line.split('=')[1].strip())
-                        if cf > last_f:
-                            last_f = cf
-                            progress_callback(cf, total_f)
-                    except:
-                        pass
-            stderr_out = proc.stderr.read() if proc.stderr else ""
-            proc.wait()
-            success = proc.returncode == 0
-            err_text = stderr_out
-        else:
-            r = subprocess.run(cmd, capture_output=True)
-            success = r.returncode == 0
-            err_text = r.stderr.decode(errors='replace')
-
-        if not success:
-            err_line = err_text.strip().splitlines()[-1] if err_text.strip() else "unknown error"
-            print(f"\n  ⚠ Clip failed ({os.path.basename(source_file)}): {err_line[:150]}")
-            print(f"  ⚠ Using branded fallback filler ({dur:.2f}s)")
-            return self._make_black_filler(output_file, dur, fps)
-
-        return output_file
 
     def _add_section_navigation_overlay(self, video_input: str, output_path: str,
                                           sections: list, duration: float) -> str:
