@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Automation Workflow with Manim — Setup Guide</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-soft:#f6f7fa;
+    --card:#ffffff;
+    --line:#e3e7ef;
+    --line-strong:#c9d0e0;
+    --navy:#101a33;
+    --navy-soft:#2a3757;
+    --text:#161d2e;
+    --text-dim:#4c5771;
+    --text-faint:#7c869c;
+    --gold:#b8860b;
+    --gold-deep:#8a6508;
+    --gold-bg:#fff6e3;
+    --green:#1e8e5a;
+    --red:#c23b32;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    --fs-base: clamp(17px, 0.95vw + 13px, 20px);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:var(--fs-base);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  ::selection{ background:var(--gold-bg); color:var(--navy); }
+
+  a{ color:var(--gold-deep); text-decoration:underline; text-decoration-color:rgba(184,134,11,0.35); text-underline-offset:3px; }
+  a:hover{ color:var(--navy); text-decoration-color:var(--navy); }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 clamp(20px, 4vw, 56px); }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1080px; margin:0 auto; padding:16px clamp(20px, 4vw, 56px);
+    display:flex; align-items:center; justify-content:space-between; gap:18px;
+    flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:0.85em; letter-spacing:0.04em; color:var(--navy); font-weight:600; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--gold); }
+  .topnav{ display:flex; gap:clamp(14px,2.5vw,26px); flex-wrap:wrap; }
+  .topnav a{ color:var(--text-dim); font-size:0.92em; font-weight:600; text-decoration:none; }
+  .topnav a:hover{ color:var(--gold-deep); }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:clamp(48px,7vw,88px) 0 clamp(40px,6vw,64px); }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:0.85em; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--gold-deep); font-weight:700; margin:0 0 20px;
+  }
+  h1.title{
+    font-family:var(--font-display); font-weight:700; font-size:clamp(36px, 6vw, 62px);
+    line-height:1.12; margin:0 0 24px; color:var(--navy); letter-spacing:-0.01em;
+  }
+  h1.title em{ font-style:italic; color:var(--gold-deep); }
+  .tagline{ font-size:clamp(18px, 1.6vw, 23px); color:var(--text-dim); max-width:700px; margin:0 0 40px; line-height:1.6; }
+
+  .creator-card{
+    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+    background:var(--bg-soft); border:1px solid var(--line); border-radius:16px;
+    padding:24px 28px; margin-bottom:34px;
+  }
+  .creator-badge{
+    width:64px; height:64px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--gold), var(--gold-deep));
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; font-size:26px; color:#fff;
+  }
+  .creator-text{ flex:1; min-width:200px; }
+  .creator-text .name{ font-size:1.25em; font-weight:700; color:var(--navy); margin-bottom:2px; }
+  .creator-text .role{ font-size:0.9em; color:var(--text-faint); font-family:var(--font-mono); }
+
+  .cta-row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:9px;
+    padding:14px 22px; border-radius:10px; font-size:0.95em; font-weight:700;
+    font-family:var(--font-body); border:1.5px solid var(--line-strong);
+    text-decoration:none; transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); text-decoration:none; }
+  .btn-gold{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .btn-gold:hover{ background:var(--navy-soft); box-shadow:0 6px 18px rgba(16,26,51,0.25); }
+  .btn-ghost{ background:#fff; color:var(--navy); }
+  .btn-ghost:hover{ border-color:var(--gold); color:var(--gold-deep); box-shadow:0 6px 18px rgba(184,134,11,0.15); }
+
+  .callout{
+    background:var(--gold-bg); border:1px solid #f0dfa8; border-left:5px solid var(--gold);
+    border-radius:10px; padding:20px 26px; margin:24px 0; font-size:0.98em; color:var(--navy-soft); line-height:1.65;
+  }
+  .callout strong{ color:var(--navy); }
+
+  /* ---------- TOC ---------- */
+  .toc{
+    background:var(--bg-soft); border:1px solid var(--line); border-radius:16px;
+    padding:clamp(24px,3vw,34px); margin:48px 0;
+  }
+  .toc-title{ font-family:var(--font-mono); font-size:0.85em; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold-deep); font-weight:700; margin:0 0 20px; }
+  .toc ol{ margin:0; padding:0; list-style:none; counter-reset:toc; display:grid; grid-template-columns:1fr 1fr; gap:6px 32px; }
+  .toc li{ counter-increment:toc; margin-bottom:4px; }
+  .toc li a{
+    color:var(--text); font-size:1.02em; font-weight:600; display:flex; gap:12px; align-items:baseline;
+    text-decoration:none; padding:6px 0;
+  }
+  .toc li a:hover{ color:var(--gold-deep); }
+  .toc li a::before{
+    content:counter(toc, decimal-leading-zero);
+    font-family:var(--font-mono); font-size:0.8em; color:var(--gold); flex-shrink:0; font-weight:700;
+  }
+  @media (max-width:640px){ .toc ol{ grid-template-columns:1fr; } }
+
+  /* ---------- sections ---------- */
+  section.block{ padding:clamp(44px,6vw,72px) 0; border-top:1px solid var(--line); }
+  .section-num{ font-family:var(--font-mono); font-size:0.85em; color:var(--gold); letter-spacing:0.1em; margin:0 0 12px; font-weight:700; }
+  h2{ font-family:var(--font-display); font-weight:700; font-size:clamp(28px,3.6vw,38px); margin:0 0 26px; color:var(--navy); letter-spacing:-0.01em; }
+  h3{ font-family:var(--font-body); font-weight:700; font-size:1.25em; margin:36px 0 14px; color:var(--navy); }
+  p{ color:var(--text-dim); margin:0 0 20px; font-size:1em; max-width:760px; }
+  ul, ol.plain{ color:var(--text-dim); font-size:1em; padding-left:26px; margin:0 0 22px; max-width:760px; }
+  li{ margin-bottom:10px; line-height:1.65; }
+  strong{ color:var(--navy); font-weight:700; }
+
+  code, .inline-code{
+    font-family:var(--font-mono); background:var(--bg-soft); border:1px solid var(--line);
+    border-radius:5px; padding:3px 8px; font-size:0.88em; color:var(--gold-deep); font-weight:600;
+  }
+  pre{
+    background:var(--navy); border-radius:14px;
+    padding:24px 28px; overflow-x:auto; margin:22px 0;
+  }
+  pre code{ background:none; border:none; padding:0; color:#e8ecf5; font-size:0.92em; line-height:1.7; }
+
+  /* ---------- pipeline diagram ---------- */
+  .pipeline{
+    display:flex; flex-wrap:wrap; gap:0; align-items:stretch; margin:36px 0;
+    background:var(--bg-soft); border:1px solid var(--line); border-radius:16px; padding:clamp(24px,4vw,38px) clamp(16px,3vw,26px);
+  }
+  .pstep{
+    flex:1; min-width:130px; display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:12px 8px; position:relative;
+  }
+  .pstep .icon{
+    width:60px; height:60px; border-radius:14px; background:#fff; border:1.5px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(16,26,51,0.06);
+  }
+  .pstep .label{ font-size:0.98em; font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .pstep .sub{ font-size:0.82em; color:var(--text-faint); font-family:var(--font-mono); }
+  .pconnector{
+    display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:22px; font-weight:700;
+    padding:0 4px; align-self:center; margin-top:-30px;
+  }
+
+  /* ---------- table ---------- */
+  table{ width:100%; border-collapse:collapse; margin:22px 0; font-size:0.96em; }
+  th, td{ text-align:left; padding:14px 18px; border-bottom:1px solid var(--line); color:var(--text-dim); }
+  th{ font-family:var(--font-mono); font-size:0.78em; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold-deep); font-weight:700; background:var(--bg-soft); }
+  td strong{ color:var(--navy); }
+  tr:hover td{ background:var(--bg-soft); }
+
+  /* ---------- follow grid ---------- */
+  .follow-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); gap:18px; margin:30px 0; }
+  .follow-card{
+    background:var(--bg-soft); border:1.5px solid var(--line); border-radius:14px; padding:24px 26px;
+    display:flex; flex-direction:column; gap:12px; transition:all 0.15s ease;
+  }
+  .follow-card:hover{ border-color:var(--gold); box-shadow:0 6px 20px rgba(184,134,11,0.12); transform:translateY(-2px); }
+  .follow-card .fc-name{ font-weight:700; font-size:1.1em; color:var(--navy); }
+  .follow-card .fc-desc{ font-size:0.88em; color:var(--text-faint); line-height:1.5; }
+  .follow-card a.fc-link{ font-family:var(--font-mono); font-size:0.85em; font-weight:600; }
+
+  /* ---------- footer ---------- */
+  footer{ padding:56px 0 70px; text-align:center; border-top:1px solid var(--line); }
+  footer .sig{ font-family:var(--font-display); font-style:italic; font-size:1.3em; color:var(--gold-deep); margin-bottom:10px; font-weight:700; }
+  footer .fine{ font-size:0.85em; color:var(--text-faint); font-family:var(--font-mono); }
+
+  @media (max-width:640px){
+    .pipeline{ flex-direction:column; }
+    .pconnector{ transform:rotate(90deg); margin:8px 0; }
+  }
+
+  /* ---------- large screens / TV ---------- */
+  @media (min-width:1600px){
+    :root{ --fs-base: 22px; }
+    .wrap{ max-width:1280px; }
+    .topbar-inner{ max-width:1280px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot"></span> SYSTEMS THAT SCALE — WORKFLOW GUIDE</div>
+    <div class="topnav">
+      <a href="#what-is-manim">Manim</a>
+      <a href="#what-is-n8n">n8n</a>
+      <a href="#architecture">How It Works</a>
+      <a href="#setup">Setup</a>
+      <a href="#follow">Follow</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Free &middot; Open Workflow &middot; n8n + Manim</p>
+    <h1 class="title">Turn a script into a<br><em>fully rendered</em> video, automatically.</h1>
+    <p class="tagline">This is the actual n8n + Manim automation used to run two YouTube channels end to end — no editing software, no manual animation. This guide explains every piece, even if you've never touched n8n or Manim before.</p>
+
+    <div class="creator-card">
+      <div class="creator-badge">SJ</div>
+      <div class="creator-text">
+        <div class="name">Built by Selwyn Jayme</div>
+        <div class="role">Systems That Scale &middot; Automation &amp; Full-Stack Builder</div>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-gold" href="https://www.youtube.com/@SelwynBuilds-j1s" target="_blank" rel="noopener">▶ Subscribe: Selwyn Builds</a>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn btn-ghost" href="https://discord.gg/hYc2umc7Q" target="_blank" rel="noopener">💬 Join the Discord</a>
+      <a class="btn btn-ghost" href="https://whop.com/joined/selwyn-builds/course-ai-automation-mastery-build-systems-that--rc0jGvlp9zbLvh/app/" target="_blank" rel="noopener">🎓 Free Automation Course</a>
+      <a class="btn btn-ghost" href="https://www.youtube.com/@MathUnlockedYT" target="_blank" rel="noopener">▶ Math Unlocked</a>
+      <a class="btn btn-ghost" href="https://www.youtube.com/@FRCFinance" target="_blank" rel="noopener">▶ FRC Finance</a>
+      <a class="btn btn-ghost" href="https://github.com/RandomSci" target="_blank" rel="noopener">GitHub — RandomSci</a>
+      <a class="btn btn-ghost" href="https://facebook.com/randomsci" target="_blank" rel="noopener">Facebook</a>
+    </div>
+
+    <div class="callout">
+      <strong>Stuck, or want help from people actually building this stuff?</strong> Join the <a href="https://discord.gg/hYc2umc7Q" target="_blank" rel="noopener">Systems That Scale Discord</a> — there's a dedicated channel for workflow code drops just like this one. If you want to learn n8n and automation from scratch, the <a href="https://whop.com/joined/selwyn-builds/course-ai-automation-mastery-build-systems-that--rc0jGvlp9zbLvh/app/" target="_blank" rel="noopener">free automation course</a> is the place to start.
+    </div>
+
+    <div class="callout">
+      <strong>New to this?</strong> Both channels linked above (<a href="https://www.youtube.com/@MathUnlockedYT" target="_blank" rel="noopener">Math Unlocked</a> and <a href="https://www.youtube.com/@FRCFinance" target="_blank" rel="noopener">FRC Finance</a>) are built entirely with the workflow in this repo — go watch a video, then come back and see exactly how it was made.
+    </div>
+
+    <nav class="toc">
+      <p class="toc-title">Table of Contents</p>
+      <ol>
+        <li><a href="#what-is-this">What This Repo Actually Is</a></li>
+        <li><a href="#what-is-manim">What Is Manim?</a></li>
+        <li><a href="#what-is-n8n">What Is n8n?</a></li>
+        <li><a href="#architecture">How The Pipeline Works</a></li>
+        <li><a href="#setup">Setup &amp; Requirements</a></li>
+        <li><a href="#import">Importing &amp; Running It</a></li>
+        <li><a href="#customizing">Making It Your Own</a></li>
+        <li><a href="#troubleshooting">Common Issues</a></li>
+        <li><a href="#follow">Follow The Build</a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <section class="block" id="what-is-this">
+    <p class="section-num">01</p>
+    <h2>What this repo actually is</h2>
+    <p>This is one n8n workflow (<code>Video_Automation_Workflow_with_Manim.json</code>) plus the Python engine it calls (<code>main.py</code> and <code>functions_manim.py</code>). Together, they take a narration audio file and turn it into a complete, narrated, animated video — automatically.</p>
+    <p>No stock footage. No manual keyframing. No editing timeline. The visuals are <strong>generated as code</strong> and rendered fresh for every video, which is why the channels built on this system never repeat the same clip twice.</p>
+    <div class="callout">
+      This isn't a demo or a toy version — it's the real pipeline, with the API keys stripped out so you can drop in your own and run it yourself.
+    </div>
+  </section>
+
+  <section class="block" id="what-is-manim">
+    <p class="section-num">02</p>
+    <h2>What is Manim?</h2>
+    <p><strong>Manim</strong> is an animation engine originally built by Grant Sanderson (the creator of 3Blue1Brown) to make math videos. Instead of dragging shapes around in a timeline editor, you <em>write code</em> that describes what should appear on screen and how it should move — and Manim renders that code into a video file, frame by frame.</p>
+    <p>A very simplified example of what Manim code looks like:</p>
+    <pre><code>text = Text("34,000", font_size=140, color=GREEN)
+self.play(FadeIn(text, scale=0.9))
+self.wait(2)</code></pre>
+    <p>That's it — that's an animation. This repo uses an AI model to <em>write that code automatically</em> based on what the narration is saying, so every chart, counter, and diagram is generated to match the script, with zero manual animation work.</p>
+  </section>
+
+  <section class="block" id="what-is-n8n">
+    <p class="section-num">03</p>
+    <h2>What is n8n?</h2>
+    <p><strong>n8n</strong> (pronounced "n-eight-n") is a visual automation tool — think of it as connecting boxes on a canvas, where each box does one job (download a file, call an API, upload a video) and passes its result to the next box. It's the same category of tool as Zapier or Make, except it's free to self-host and gives you full control over the logic.</p>
+    <p>In this workflow, n8n is the <strong>conductor</strong>. It doesn't render the video itself — it triggers the Python engine (which does the actual rendering), waits for it to finish, then automatically uploads the result and posts about it.</p>
+    <div class="callout">
+      <strong>If you've never opened n8n before:</strong> install it, open the editor, and use the <em>Import from File</em> option to load the <code>.json</code> workflow from this repo. Every box (called a "node") will appear on the canvas exactly as it was built — you're not starting from scratch.
+    </div>
+  </section>
+
+  <section class="block" id="architecture">
+    <p class="section-num">04</p>
+    <h2>How the pipeline actually works</h2>
+    <p>Here's the full path from a narration file to an uploaded video:</p>
+
+    <div class="pipeline">
+      <div class="pstep">
+        <div class="icon">🎙️</div>
+        <div class="label">Audio In</div>
+        <div class="sub">narration.mp3</div>
+      </div>
+      <div class="pconnector">→</div>
+      <div class="pstep">
+        <div class="icon">📝</div>
+        <div class="label">Transcribe</div>
+        <div class="sub">Whisper</div>
+      </div>
+      <div class="pconnector">→</div>
+      <div class="pstep">
+        <div class="icon">🧩</div>
+        <div class="label">Story Beats</div>
+        <div class="sub">GPT</div>
+      </div>
+      <div class="pconnector">→</div>
+      <div class="pstep">
+        <div class="icon">🎬</div>
+        <div class="label">Manim Code</div>
+        <div class="sub">GPT-generated</div>
+      </div>
+      <div class="pconnector">→</div>
+      <div class="pstep">
+        <div class="icon">⚙️</div>
+        <div class="label">Render</div>
+        <div class="sub">Manim + ffmpeg</div>
+      </div>
+      <div class="pconnector">→</div>
+      <div class="pstep">
+        <div class="icon">☁️</div>
+        <div class="label">Upload</div>
+        <div class="sub">via n8n</div>
+      </div>
+    </div>
+
+    <h3>Step by step</h3>
+    <table>
+      <tr><th>Stage</th><th>What happens</th></tr>
+      <tr><td><strong>Transcribe</strong></td><td>The narration audio is transcribed locally with Whisper, producing word-level timestamps.</td></tr>
+      <tr><td><strong>Story Beats</strong></td><td>GPT reads the transcript and breaks it into "beats" — small, timestamped ideas the video needs to visualize.</td></tr>
+      <tr><td><strong>Manim Code</strong></td><td>Beats are grouped into short chunks (a few seconds each), and GPT writes real Manim scene code for each chunk — a chart, a counter, a formula, whatever the beat calls for.</td></tr>
+      <tr><td><strong>Render</strong></td><td>Every chunk is rendered independently, duration-locked to match the audio exactly, then stitched back together with ffmpeg.</td></tr>
+      <tr><td><strong>Upload</strong></td><td>n8n picks up the finished file and handles the platform upload, thumbnail, and metadata.</td></tr>
+    </table>
+
+    <div class="callout">
+      <strong>Why chunks instead of one long render?</strong> If a single chunk fails (bad code, a crash), only that few-second piece needs a fallback — not the entire video. That's what makes this pipeline resilient enough to run unattended.
+    </div>
+  </section>
+
+  <section class="block" id="setup">
+    <p class="section-num">05</p>
+    <h2>Setup &amp; requirements</h2>
+    <p>You'll need the following installed before running anything:</p>
+    <ul>
+      <li><strong>Python 3.11+</strong> with <code>pip</code></li>
+      <li><strong>n8n</strong> (self-hosted or n8n Cloud)</li>
+      <li><strong>ffmpeg</strong> on your system PATH</li>
+      <li><strong>Manim Community Edition</strong> (installed via <code>requirements.txt</code>)</li>
+      <li>An <strong>OpenAI API key</strong> (for the transcription-to-code steps)</li>
+    </ul>
+    <h3>Install the Python dependencies</h3>
+    <pre><code>pip install -r requirements.txt</code></pre>
+    <h3>Set up your environment file</h3>
+    <p>Copy <code>.env.example</code> to <code>.env</code> and fill in your own API keys. Never commit your real <code>.env</code> file — it's already excluded via <code>.gitignore</code>.</p>
+    <h3>Run the Python engine</h3>
+    <pre><code>uvicorn main:app --host 0.0.0.0 --port 8000</code></pre>
+    <p>This starts the rendering server that n8n will call.</p>
+  </section>
+
+  <section class="block" id="import">
+    <p class="section-num">06</p>
+    <h2>Importing &amp; running the workflow</h2>
+    <ol class="plain">
+      <li>Open your n8n editor.</li>
+      <li>Click <strong>Import from File</strong> and select <code>Video_Automation_Workflow_with_Manim.json</code> from this repo.</li>
+      <li>Every node will need its own credentials reconnected (YouTube, GitHub, image generation, etc.) — the ones in this file were stripped out on purpose before it was made public.</li>
+      <li>Update any HTTP Request nodes pointing at <code>http://localhost:8000</code> if your Python engine is running somewhere else.</li>
+      <li>Drop your own narration audio into the <code>Audio_Voice</code> folder, matching the filename the workflow expects.</li>
+      <li>Trigger the workflow and watch it run — transcription, beat analysis, code generation, and rendering all happen automatically.</li>
+    </ol>
+  </section>
+
+  <section class="block" id="customizing">
+    <p class="section-num">07</p>
+    <h2>Making it your own</h2>
+    <p>This workflow was built for finance and math explainer content, but the underlying system isn't locked to either niche:</p>
+    <ul>
+      <li><strong>Swap the topic:</strong> the GPT prompts in <code>main.py</code> control what kind of visuals get generated — rewrite the system prompt for your own subject.</li>
+      <li><strong>Add your own Manim building blocks:</strong> <code>functions_manim.py</code> is a library of reusable animation functions (counters, bar charts, comparisons, etc.) — add new ones for your content type.</li>
+      <li><strong>Change the output format:</strong> resolution, frame rate, and orientation (vertical vs. landscape) are all set near the top of <code>main.py</code>.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="troubleshooting">
+    <p class="section-num">08</p>
+    <h2>Common issues</h2>
+    <h3>Whisper is slow / using CPU</h3>
+    <p>If you don't have a discrete GPU, transcription runs on CPU and will be noticeably slower on longer audio files. This is expected, not a bug — a 9-10 minute narration file can take several minutes just to transcribe.</p>
+    <h3>A chunk keeps failing the same way</h3>
+    <p>Check the debug source saved for that chunk (written automatically on every render, pass or fail) to see the exact code GPT generated — it's usually a banned Manim class or a syntax issue that gets auto-repaired on the next attempt.</p>
+    <h3>Render is taking a long time</h3>
+    <p>Longer scripts mean more chunks, more GPT calls, and more individual renders. This is a genuinely CPU/API-bound pipeline — there's no shortcut around a long narration file needing more processing.</p>
+  </section>
+
+  <section class="block" id="follow">
+    <p class="section-num">09</p>
+    <h2>Follow the build</h2>
+    <p>Everything in this repo is actively used to run two real YouTube channels — if you want to see what this pipeline actually produces, or follow along as it keeps getting better, here's where to find it:</p>
+
+    <div class="follow-grid">
+      <div class="follow-card">
+        <div class="fc-name">💬 Systems That Scale Discord</div>
+        <div class="fc-desc">Build logs, code drops, and a place to ask questions directly — including a channel for workflows like this one.</div>
+        <a class="fc-link" href="https://discord.gg/hYc2umc7Q" target="_blank" rel="noopener">discord.gg/hYc2umc7Q</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">🎓 Free Automation Course</div>
+        <div class="fc-desc">Never used n8n before? Start here — AI Automation Mastery, free.</div>
+        <a class="fc-link" href="https://whop.com/joined/selwyn-builds/course-ai-automation-mastery-build-systems-that--rc0jGvlp9zbLvh/app/" target="_blank" rel="noopener">whop.com/selwyn-builds</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">▶ Selwyn Builds</div>
+        <div class="fc-desc">Build breakdowns, tutorials, and how this whole system was put together.</div>
+        <a class="fc-link" href="https://www.youtube.com/@SelwynBuilds-j1s" target="_blank" rel="noopener">youtube.com/@SelwynBuilds-j1s</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">▶ Math Unlocked</div>
+        <div class="fc-desc">Math, statistics, and machine learning — fully automated, built on this exact pipeline.</div>
+        <a class="fc-link" href="https://www.youtube.com/@MathUnlockedYT" target="_blank" rel="noopener">youtube.com/@MathUnlockedYT</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">▶ FRC Finance</div>
+        <div class="fc-desc">Personal finance explainers, also fully automated end to end.</div>
+        <a class="fc-link" href="https://www.youtube.com/@FRCFinance" target="_blank" rel="noopener">youtube.com/@FRCFinance</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">GitHub — RandomSci</div>
+        <div class="fc-desc">Every repo, including the full source for both channels above.</div>
+        <a class="fc-link" href="https://github.com/RandomSci" target="_blank" rel="noopener">github.com/RandomSci</a>
+      </div>
+      <div class="follow-card">
+        <div class="fc-name">Facebook</div>
+        <div class="fc-desc">Updates, build logs, and community posts.</div>
+        <a class="fc-link" href="https://facebook.com/randomsci" target="_blank" rel="noopener">facebook.com/randomsci</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="sig">— Selwyn Jayme, Systems That Scale</div>
+    <div class="fine">Free to use, modify, and build on. If it helps you ship something, that's the whole point.</div>
+  </footer>
+
+</div>
+</body>
+</html>
