@@ -5,7 +5,7 @@ A free, working n8n + Manim pipeline that turns a narration script into a fully 
 
 ---
 
-## 📘 Start here: [instructions.html](./instructions.html)
+## 📘 Start here: [instructions.html](https://htmlpreview.github.io/?https://github.com/RandomSci/Video-Automation-Workflow-With-Manim/blob/main/instructions.html)
 
 **If you're new to n8n or Manim, open `instructions.html` first.** It's a complete, standalone setup guide — what this actually does, what Manim and n8n are, how the pipeline fits together, and step-by-step setup. Everything below is a quick reference for people who already know their way around.
 
@@ -36,7 +36,7 @@ Then import `Video_Automation_Workflow_with_Manim.json` into n8n and reconnect y
 
 Audio → Whisper transcription → GPT story beats → GPT-generated Manim code per chunk → rendered + duration-locked → stitched together → uploaded via n8n.
 
-Full breakdown with a diagram is in [instructions.html](./instructions.html).
+Full breakdown with a diagram is in [instructions.html](https://htmlpreview.github.io/?https://github.com/RandomSci/Video-Automation-Workflow-With-Manim/blob/main/instructions.html).
 
 ## This is the real pipeline
 
